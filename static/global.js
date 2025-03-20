@@ -23,9 +23,9 @@ const ARE_WE_HOME = document.documentElement.classList.contains("home");
 
 let pages = [
     {url: ".", title: "Home"},
-    {url: "projetos/", title: "Projects"},
-    {url: "contato/", title: "Contato"},
-    {url: "cv/", title: "Currículo"},
+    {url: "projetos", title: "Projects"},
+    {url: "contato", title: "Contato"},
+    {url: "cv", title: "Currículo"},
     {url: "https://github.com/Gustyper", title: "Github"},
     // add the rest of your pages here
 ];
