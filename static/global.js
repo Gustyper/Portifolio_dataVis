@@ -38,7 +38,7 @@ for (let p of pages) {
     let url = p.url;
 
     if (!ARE_WE_HOME && !url.startsWith("http")) {
-        url = "../" + url;
+        url = "/lab4_dataVis/" + url;
     }
 
     let title = p.title;
