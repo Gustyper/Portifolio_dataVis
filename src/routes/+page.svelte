@@ -4,7 +4,7 @@
 
 <div class="background">
   <!-- Usando o GIF local -->
-  <img src="../images/giphy.gif" alt="GIF Background">
+  <img src="images/giphy.gif" alt="GIF Background">
 </div>
 
 <div class="contentHome">

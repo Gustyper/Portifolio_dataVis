@@ -18,7 +18,7 @@
                 Telefone: (54) 99112-0291<br>
                 E-mail: <a href="mailto:gu.bianchi.s@gmail.com">gu.bianchi.s@gmail.com</a><br>
                 LinkedIn: <a href="https://www.linkedin.com/in/gustavobianchidasilva/" target="_blank">https://www.linkedin.com/in/gustavobianchidasilva/</a></p>
-                <img src="images/perfil.jpg" alt="Foto de Gustavo Bianchi">
+                <img src="../images/perfil.jpg" alt="Foto de Gustavo Bianchi">
             </div>
         </section>
 
