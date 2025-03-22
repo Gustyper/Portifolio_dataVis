@@ -8,12 +8,12 @@
             <h1>Meus Projetos</h1>
             <p>Confira alguns dos meus projetos mais recentes</p>
         </div>
-    </div>
-
+    </div>      
+    
     <!-- Projetos -->
     <div class="container">
-        <div class="current">
-            <h2>Projeto 1</h2>
+        <div class="project">
+            <h2>Projeto 1: Aventura Sombria</h2>
             <div class="comfoto">
                 <img src="../images/alone-hollow-knight.jpg" alt="Aventura Sombria">
                 <div class="text-container">
@@ -21,8 +21,8 @@
                 </div>
             </div>
         </div>
-
-        <div class="current">
+    
+        <div class="project">
             <h2>Projeto 2: Exploração Espacial</h2>
             <div class="comfoto">
                 <img src="../images/alone-hollow-knight.jpg" alt="Exploração Espacial">
@@ -31,8 +31,8 @@
                 </div>
             </div>
         </div>
-
-        <div class="current">
+    
+        <div class="project">
             <h2>Projeto 3: A Cidade Futurista</h2>
             <div class="comfoto">
                 <img src="../images/alone-hollow-knight.jpg" alt="Cidade Futurista">

@@ -1,3 +1,4 @@
+/* Resetando os estilos */
 * {
     margin: 0;
     padding: 0;
@@ -5,27 +6,121 @@
 }
 
 html {
-    color-scheme: dark light;
+    font-size: 16px;
+}
+
+/* Estilo para o tema Light */
+:root[color-scheme="light"] {
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+:root[color-scheme="light"] .container {
+    background-color: white;
+    color: #333;
+}
+
+:root[color-scheme="light"] h2 {
+    color: #2c3e50;
+}
+
+:root[color-scheme="light"] a {
+    color: #3498db;
+}
+
+:root[color-scheme="light"] a:hover {
+    color: #2c3e50;
+}
+
+/* Estilo para o tema Dark */
+:root[color-scheme="dark"] {
+    background-color: #0d1117;
+    color: #e5e5e5;
+}
+
+:root[color-scheme="dark"] .container {
+    background-color: #1f1f1f;
+    color: #e5e5e5;
+}
+
+:root[color-scheme="dark"] h2 {
+    color: #3498db;
+}
+
+:root[color-scheme="dark"] a {
+    color: #00ff96;
+}
+
+:root[color-scheme="dark"] a:hover {
+    color: #2c3e50;
 }
 
 body {
-    font-family: Arial, sans-serif;
-    color: #333;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    background-color: #05312b;
-    background-size: cover;        
-    background-position: center;    
-    background-repeat: no-repeat;   
+    background-size: cover;
+    background-position: center;
     background-attachment: fixed;
 }
 
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+/* Definir o fundo com o GIF */
+.background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: -1; /* Garantir que o fundo fique atrás do conteúdo */
+}
+
+.background img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Garante que o GIF cubra toda a tela sem distorcer */
+    filter: blur(5px); /* Aplica o desfoque no GIF */
+}
+
+/* Estilo para o texto centralizado */
+.contentHome {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    font-size: 2rem;
+    z-index: 10; /* Garante que o conteúdo fique acima do fundo */
+}
+
+.contentHome h1 {
+    font-size: 3rem;
+    margin: 0;
+}
+
+.contentHome p {
+    font-size: 1.5rem;
+    margin-top: 10px;
+}
+
+/* Título de Apresentação */
 .titulo-apresentacao {
-    height: 250px;                 
+    height: 250px;
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
-    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
+    color: #2c3e50;
+    font-size: 2.5rem;
+    font-weight: 600;
+    text-align: center;
 }
 
 .text-container {
@@ -33,153 +128,168 @@ body {
 }
 
 .text-container h1 {
-    font-size: 2.5rem;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    font-size: 3rem;
 }
 
 .text-container p {
     font-size: 1.2rem;
+    color: #7f8c8d;
 }
 
+/* Container principal */
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 30px auto;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    background: white;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    color: #333;
 }
 
-.comfoto {
-    display: flex;
-    align-items: center;
-    margin-top: 20px;
-}
-
-.comfoto img {
-    width: 30%; 
-    padding-right: 5%;
-    padding-top: 10px;
-    border-radius: 5px;
-    border-color: #06048b;
-    border-width: 5px;
-}
-
-.current {
-    padding-bottom: 10px;
-    border-bottom: #94939b;
-    border-bottom: 0.4em;
-}
-
+/* Estilo dos projetos */
 h2 {
     margin-top: 20px;
     color: #2c3e50;
+    font-size: 1.6rem;
     border-bottom: 2px solid #3498db;
     padding-bottom: 5px;
 }
 
 ul {
-    list-style-type: disc;
+    list-style-type: none;
     margin-left: 20px;
     margin-top: 10px;
 }
 
+ul li {
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #2c3e50;
+    text-decoration: underline;
+}
+
+/* Estilo da foto e bolinha */
+.comfoto {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* Alinha a foto à direita */
+    margin-top: 20px;
+}
+
+.comfoto img {
+    width: 150px; /* Tamanho maior */
+    height: 150px; /* Tamanho maior */
+    border-radius: 50%;
+    border: 3px solid #3498db;
+    box-shadow: 0 0 15px rgba(17, 0, 255, 0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.comfoto img:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 25px rgb(0, 16, 104);
+}
+
+.bolinha {
+    width: 10px;
+    height: 10px;
+    background-color: #3498db; /* Azul */
+    border-radius: 50%;
+    margin-left: 10px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.comfoto p {
+    font-size: 1.1rem;
+    color: #7f8c8d;
+    line-height: 1.6;
+}
+
+/* Estilo de navegação */
 nav {
     display: flex;
-    text-align: center;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    --border-color: oklch(50% 10% 200 / 40%);
-    border-bottom-color: var(--border-color);
-    background-color: color-mix(in oklch, var(--color-accent), canvas 85%);
+    justify-content: center;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    z-index: 100;
 }
 
 nav a {
-    margin: 0 10px;
+    margin: 0 20px;
     text-align: center;
-    text-decoration: none;
     font-weight: bold;
-    transition: color 0.2s ease;
-    flex: 1;
-    text-decoration: none;
-    color: white;
+    color: #2c3e50;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
 }
 
 nav a:hover {
-    background-color: rgba(252, 0, 210, 0.205);
-    text-decoration: underline;
-    color: var(--color-accent);
+    background-color: #3498db;
+    color: white;
+    text-decoration: none;
 }
 
-form {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 1em;
-}
-
-label {
-    display: grid;
-    grid-template-columns: subgrid;
-}
-
-input{
-    grid-column: (1 / -1);
-}
-
-.color-scheme {
-    display: inline-flex;
-    gap: 4px;
-    position: absolute;
-    top: 3.5rem;
-    left: 1rem;
-}
-
-.color-scheme select {
-    margin-left: 4px;
-}
-
-/* Estilos gerais do formulário */
+/* Estilo do formulário */
 .form-container {
-    max-width: 600px;
-    margin: 30px auto;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 10px;
+    max-width: 500px;
+    margin: 50px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
+.form-container h2 {
+    text-align: center;
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+/* Estilos do Formulário */
 form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
 }
 
 label {
-    font-size: 1rem;
-    font-weight: bold;
+    font-size: 1.1rem;
     color: #2c3e50;
-    margin-bottom: 5px;
 }
 
 input, textarea {
-    padding: 10px;
+    padding: 12px;
     font-size: 1rem;
     border: 2px solid #3498db;
     border-radius: 5px;
     outline: none;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    background-color: #f9f9f9;
+    background-color: #ecf0f1;
+    color: #333;
+    transition: border-color 0.3s ease;
 }
 
 input:focus, textarea:focus {
     border-color: #2980b9;
-    box-shadow: 0 0 5px rgba(41, 128, 185, 0.5);
+    box-shadow: 0 0 5px rgba(41, 128, 185, 0.7);
 }
 
-textarea {
-    resize: vertical;
-}
-
+/* Estilo do botão */
 button {
     padding: 12px;
     font-size: 1.1rem;
@@ -188,13 +298,40 @@ button {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 button:hover {
     background-color: #2980b9;
+    box-shadow: 0 0 10px rgba(41, 128, 185, 0.5);
 }
 
 button:active {
     background-color: #1c5989;
+    box-shadow: 0 0 20px rgba(41, 128, 185, 1);
+}
+
+/* Posicionamento do seletor de tema no canto superior direito */
+.color-scheme {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    font-size: 1rem;
+}
+
+select {
+    padding: 5px;
+    border-radius: 5px;
+    background-color: #ecf0f1;
+    border: 1px solid #3498db;
+    font-size: 1rem;
+}
+
+select:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 5px rgba(41, 128, 185, 0.7);
 }

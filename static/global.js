@@ -17,8 +17,9 @@
 
 
 
-//------------------------------------------ SEGUNDA PARTE (automatizar todo o nav)
 
+//------------------------------------------ SEGUNDA PARTE (automatizar todo o nav)
+// Verifica se estamos na página inicial
 const ARE_WE_HOME = document.documentElement.classList.contains("home");
 
 let pages = [
@@ -39,10 +40,10 @@ for (let p of pages) {
 
     if (!ARE_WE_HOME && !url.startsWith("http")) {
         url = "/lab4_dataVis/" + url;
+        // url = "/../" + url;
     }
 
     let title = p.title;
-    // Create link and add it to nav
     let a = document.createElement("a");
     a.href = url;
     a.textContent = title;
@@ -51,14 +52,12 @@ for (let p of pages) {
     if (a.host === location.host && a.pathname === location.pathname) {
         a.classList.add("current");
     }
-    else if (a.host != location.host)
-    {
-        // Coloca o github pra abrir em outra página em branco
-        a.target = "_blank"
+    else if (a.host != location.host) {
+        a.target = "_blank";  // Links externos abrem em nova aba
     }
-
 }
 
+// Criação do seletor de tema
 document.body.insertAdjacentHTML("afterbegin", `
     <label class="color-scheme">
         Theme:
@@ -70,19 +69,23 @@ document.body.insertAdjacentHTML("afterbegin", `
     </label>`
 );
 
+// Adiciona o evento de troca de tema
 let select = document.querySelector("select");
 
 select.addEventListener("input", function (event) {
+    // Altera a propriedade CSS 'color-scheme' com base na seleção
     document.documentElement.style.setProperty("color-scheme", event.target.value);
+    
+    // Salva a preferência no localStorage
+    localStorage.colorScheme = event.target.value;
 });
 
-localStorage.colorScheme = event.target.value;
-
-alert(event.target.value)
-
+// Aplica o esquema de cores salvo ao carregar a página
 if (localStorage.colorScheme) {
     document.documentElement.style.setProperty("color-scheme", localStorage.colorScheme);
-    select.value = localStorage.colorScheme;
+    select.value = localStorage.colorScheme; // Define a opção do seletor para o valor salvo
+} else {
+    // Se não houver esquema de cores salvo, define o valor como 'auto'
+    localStorage.colorScheme = "auto";
+    select.value = "auto";
 }
-
-// TODO terminar
