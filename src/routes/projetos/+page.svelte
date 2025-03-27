@@ -2,6 +2,11 @@
   <title>Meus Projetos</title>
 </svelte:head>
 
+<script>
+  import projects from "$lib/projects.json";
+  import Project from "$lib/Project.svelte";
+</script>
+
 
     <div class="titulo-apresentacao">
         <div class="text-container">
@@ -10,35 +15,13 @@
         </div>
     </div>      
     
+
     <!-- Projetos -->
     <div class="container">
-        <div class="project">
-            <h2>Projeto 1: Aventura Sombria</h2>
-            <div class="comfoto">
-                <img src="../images/alone-hollow-knight.jpg" alt="Aventura Sombria">
-                <div class="text-container">
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris lacinia leo eu libero porttitor, sit amet laoreet ex.</p>
-                </div>
-            </div>
-        </div>
     
-        <div class="project">
-            <h2>Projeto 2: Exploração Espacial</h2>
-            <div class="comfoto">
-                <img src="../images/alone-hollow-knight.jpg" alt="Exploração Espacial">
-                <div class="text-container">
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris lacinia leo eu libero porttitor, sit amet laoreet ex.</p>
-                </div>
-            </div>
-        </div>
-    
-        <div class="project">
-            <h2>Projeto 3: A Cidade Futurista</h2>
-            <div class="comfoto">
-                <img src="../images/alone-hollow-knight.jpg" alt="Cidade Futurista">
-                <div class="text-container">
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris lacinia leo eu libero porttitor, sit amet laoreet ex.</p>
-                </div>
-            </div>
-        </div>
+    { projects.length } projetos
+
+    {#each projects.slice(0, 5) as p}
+    <Project data={p} />
+    {/each}
     </div>

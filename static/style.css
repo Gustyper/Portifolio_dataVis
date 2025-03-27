@@ -335,3 +335,15 @@ select:focus {
     border-color: #2980b9;
     box-shadow: 0 0 5px rgba(41, 128, 185, 0.7);
 }
+
+/* Container que contém os projetos, abaixo do GIF */
+.projects-container {
+    display: flex;
+    flex-direction: line;
+    align-items: center;
+    gap: 2rem; /* Espaçamento entre os projetos */
+    padding: 0 1rem;
+    position: fixed;
+    bottom: 0;
+    padding-bottom: 15px;
+  }
