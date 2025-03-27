@@ -22,52 +22,52 @@
 // Verifica se estamos na página inicial
 const ARE_WE_HOME = document.documentElement.classList.contains("home");
 
-let pages = [
-    {url: ".", title: "Home"},
-    {url: "projetos", title: "Projects"},
-    {url: "contato", title: "Contato"},
-    {url: "cv", title: "Currículo"},
-    {url: "https://github.com/Gustyper", title: "Github"},
-    // add the rest of your pages here
-];
+// let pages = [
+//     {url: ".", title: "Home"},
+//     {url: "projetos", title: "Projects"},
+//     {url: "contato", title: "Contato"},
+//     {url: "cv", title: "Currículo"},
+//     {url: "https://github.com/Gustyper", title: "Github"},
+//     // add the rest of your pages here
+// ];
 
-let nav = document.createElement("nav");
-document.body.prepend(nav);
+// let nav = document.createElement("nav");
+// document.body.prepend(nav);
 
-// Coloca os links dentro dos navs
-for (let p of pages) {
-    let url = p.url;
+// // Coloca os links dentro dos navs
+// for (let p of pages) {
+//     let url = p.url;
 
-    if (!ARE_WE_HOME && !url.startsWith("http")) {
-        // url = "/lab4_dataVis/" + url;
-        url = "/../" + url;
-    }
+//     if (!ARE_WE_HOME && !url.startsWith("http")) {
+//         // url = "/lab4_dataVis/" + url;
+//         url = "/../" + url;
+//     }
 
-    let title = p.title;
-    let a = document.createElement("a");
-    a.href = url;
-    a.textContent = title;
-    nav.append(a);
+//     let title = p.title;
+//     let a = document.createElement("a");
+//     a.href = url;
+//     a.textContent = title;
+//     nav.append(a);
 
-    if (a.host === location.host && a.pathname === location.pathname) {
-        a.classList.add("current");
-    }
-    else if (a.host != location.host) {
-        a.target = "_blank";  // Links externos abrem em nova aba
-    }
-}
+//     if (a.host === location.host && a.pathname === location.pathname) {
+//         a.classList.add("current");
+//     }
+//     else if (a.host != location.host) {
+//         a.target = "_blank";  // Links externos abrem em nova aba
+//     }
+// }
 
 // Criação do seletor de tema
-document.body.insertAdjacentHTML("afterbegin", `
-    <label class="color-scheme">
-        Theme:
-        <select>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="auto">Automatic</option>
-        </select>
-    </label>`
-);
+// document.body.insertAdjacentHTML("afterbegin", `
+//     <label class="color-scheme">
+//         Theme:
+//         <select>
+//             <option value="light">Light</option>
+//             <option value="dark">Dark</option>
+//             <option value="auto">Automatic</option>
+//         </select>
+//     </label>`
+// );
 
 // Adiciona o evento de troca de tema
 let select = document.querySelector("select");
