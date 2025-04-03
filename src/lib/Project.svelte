@@ -12,7 +12,9 @@
     <div class="text-container">
       <p>{data.description}</p>
     </div>
+
   </div>
+    <p>{data.year}</p>
 </div>
 
 
