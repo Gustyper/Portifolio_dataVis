@@ -6,7 +6,21 @@
   import projects from "$lib/projects.json";
   import Project from "$lib/Project.svelte";
 
-  let profileData = fetch("https://api.github.com/users/gustyper");
+  import { onMount } from "svelte";
+
+  let githubData = null;
+  let loading = true;
+  let error = null;
+
+  onMount(async () => {
+      try {
+          const response = await fetch("https://api.github.com/users/gustyper");
+          githubData = await response.json();
+      } catch (err) {
+          error = err;
+      }
+    loading = false;
+  });
 </script>
 
 <div class="background">
@@ -22,29 +36,23 @@
 
 <!-- Status do GitHub -->
 <div class="github-stats">
-  {#await fetch("https://api.github.com/users/gustyper")}
+  {#if loading}
     <p>Loading...</p>
-  {:then response}
-    {#await response.json()}
-      <p>Decoding...</p>
-    {:then data}
-      <section>
-        <h2>GitHub Stats</h2>
-        <dl>
-          <dt>Followers</dt>
-          <dd>{data.followers}</dd>
-          <dt>Following</dt>
-          <dd>{data.following}</dd>
-          <dt>Public Repos</dt>
-          <dd>{data.public_repos}</dd>
-        </dl>
-      </section>
-    {:catch error}
+  {:else if error}
       <p class="error">Something went wrong: {error.message}</p>
-    {/await}
-  {:catch error}
-    <p class="error">Something went wrong: {error.message}</p>
-  {/await}
+  {:else}
+      <section>
+          <h2>My GitHub Stats</h2>
+          <dl>
+              <dt>Followers</dt>
+              <dd>{githubData.followers}</dd>
+              <dt>Following</dt>
+              <dd>{githubData.following}</dd>
+              <dt>Public Repositories</dt>
+              <dd>{githubData.public_repos}</dd>
+          </dl>
+      </section>
+  {/if}
 </div>
 
 <style>
