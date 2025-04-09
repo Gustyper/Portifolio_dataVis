@@ -1,40 +1,46 @@
 <script>
-    import * as d3 from "d3";
-    import { onMount } from "svelte";
-    import {
-        computePosition,
-        autoPlacement,
-        offset,
-    } from '@floating-ui/dom';
-    import Bar from '$lib/Bar.svelte';
+    // Importações necessárias
+    import * as d3 from "d3"; // D3.js para visualizações de dados
+    import { onMount } from "svelte"; // Svelte onMount para execução após o carregamento do componente
+    import { computePosition, autoPlacement, offset } from '@floating-ui/dom'; // Para posicionamento da tooltip
 
+    // Definindo dimensões do gráfico
     let width = 1000, height = 600;
-    let data = [];
-    let commits = [];
+    let data = [];  // Armazena os dados do CSV
+    let commits = [];  // Armazena os commits processados
 
+    // Função chamada ao montar o componente, responsável por carregar os dados CSV
     onMount(async () => {
-        data = await d3.csv("./loc.csv", row => ({
-            ...row,
-            line: Number(row.line), // or just +row.line
-            depth: Number(row.depth),
-            length: Number(row.length),
-            date: new Date(row.date + "T00:00" + row.timezone),
-            datetime: new Date(row.datetime)
-        }));
+        try {
+            // Carregamento assíncrono do arquivo CSV
+            data = await d3.csv("./loc.csv", row => ({
+                ...row, // Mantém os dados existentes
+                line: Number(row.line), // Converte para número
+                depth: Number(row.depth),
+                length: Number(row.length),
+                date: new Date(row.date + "T00:00" + row.timezone), // Converte data
+                datetime: new Date(row.datetime)
+            }));
+        } catch (error) {
+            console.error("Error loading CSV:", error); // Exibe erro caso falhe o carregamento
+        }
+    });
 
+    // Processa os commits a partir dos dados carregados
+    $: {
+        // Agrupando os commits por ID
         commits = d3.groups(data, d => d.commit).map(([commit, lines]) => {
-            let first = lines[0];
-            let {author, date, time, timezone, datetime} = first;
+            let first = lines[0];  // Pega o primeiro commit
+            let { author, date, time, timezone, datetime } = first;
             let ret = {
                 id: commit,
                 url: "https://github.com/gusyper/lab4_dataVis/commit/" + commit,
                 author, date, time, timezone, datetime,
-                hourFrac: datetime.getHours() + datetime.getMinutes() / 60,
-                totalLines: lines.length
+                hourFrac: datetime.getHours() + datetime.getMinutes() / 60,  // Fracção de hora
+                totalLines: lines.length  // Total de linhas alteradas nesse commit
             };
 
-            // Like ret.lines = lines
-            // but non-enumerable so it doesn’t show up in JSON.stringify
+            // Definindo propriedade não enumerável "lines" para cada commit
             Object.defineProperty(ret, "lines", {
                 value: lines,
                 configurable: true,
@@ -44,10 +50,13 @@
 
             return ret;
         });
-        commits = d3.sort(commits, d => -d.totalLines);
-    });
 
-    let margin = {top: 10, right: 10, bottom: 30, left: 20};
+        // Ordena os commits pelo número de linhas alteradas (decrescente)
+        commits = d3.sort(commits, d => -d.totalLines);
+    }
+
+    // Definindo margens e áreas utilizáveis para o gráfico
+    let margin = { top: 10, right: 10, bottom: 30, left: 20 };
     let usableArea = {
         top: margin.top,
         right: width - margin.right,
@@ -56,169 +65,176 @@
     };
     usableArea.width = usableArea.right - usableArea.left;
     usableArea.height = usableArea.bottom - usableArea.top;
-    
+
+    // Definindo escalas para o eixo X e Y
     $: minDate = d3.min(commits.map(d => d.date));
     $: maxDate = d3.max(commits.map(d => d.date));
     $: maxDatePlusOne = new Date(maxDate);
-    $: maxDatePlusOne.setDate(maxDatePlusOne.getDate() + 1);
+    $: maxDatePlusOne.setDate(maxDatePlusOne.getDate() + 1); // Aumenta 1 dia no máximo para incluir a data final
 
+    // Escala para o eixo X (tempo)
     $: xScale = d3.scaleTime()
                 .domain([minDate, maxDatePlusOne])
                 .range([usableArea.left, usableArea.right])
                 .nice();
 
+    // Escala para o eixo Y (horas)
     $: yScale = d3.scaleLinear()
                 .domain([24, 0])
                 .range([usableArea.bottom, usableArea.top]);
 
+    // Bindings de eixos (X e Y) para os elementos SVG
     let xAxis, yAxis;
 
     $: {
+        // Atualiza os eixos com a escala definida
         d3.select(xAxis).call(d3.axisBottom(xScale));
         d3.select(yAxis).call(d3.axisLeft(yScale).tickFormat(d => String(d % 24).padStart(2, "0") + ":00"));
     }
 
+    // Gridlines no eixo Y
     let yAxisGridlines;
 
     $: {
+        // Configura a grade para o eixo Y
         d3.select(yAxisGridlines).call(
             d3.axisLeft(yScale)
-            .tickFormat("")
-            .tickSize(-usableArea.width)
+            .tickFormat("") // Remove rótulos
+            .tickSize(-usableArea.width) // Desenha as linhas de grade no eixo X
         );
     }
 
-    let hoveredIndex = -1;
-    $: hoveredCommit = commits[hoveredIndex] ?? hoveredCommit ?? {};
+    // Variáveis de estado para o hover e tooltip
+    let hoveredIndex = -1;  // Indica o índice do commit selecionado
+    $: hoveredCommit = commits[hoveredIndex] ?? hoveredCommit ?? {}; // Atualiza o commit com base no índice
 
-    let cursor = {x: 0, y: 0};
-    let commitTooltip;
-    let tooltipPosition = {x: 0, y: 0};
+    let cursor = { x: 0, y: 0 }; // Posições do cursor
+    let commitTooltip; // Referência à tooltip
+    let tooltipPosition = { x: 0, y: 0 }; // Posições da tooltip
 
-    async function dotInteraction (index, evt) {
+    // Função para interações de hover e click nos commits (dots)
+    async function dotInteraction(index, evt) {
         let hoveredDot = evt.target;
         if (evt.type === "mouseenter") {
-            hoveredIndex = index;
-            cursor = {x: evt.x, y: evt.y};
+            hoveredIndex = index;  // Atualiza o índice do commit
+            cursor = { x: evt.x, y: evt.y };  // Atualiza posição do cursor
             tooltipPosition = await computePosition(hoveredDot, commitTooltip, {
-                strategy: "fixed", // because we use position: fixed
+                strategy: "fixed",  // Posição fixa da tooltip
                 middleware: [
-                    offset(5), // spacing from tooltip to dot
-                    autoPlacement() // see https://floating-ui.com/docs/autoplacement
+                    offset(5),  // Distância da tooltip em relação ao dot
+                    autoPlacement() // Ajuste automático da posição da tooltip
                 ],
-            });        }
-        else if (evt.type === "mouseleave") {
-            hoveredIndex = -1
-        }
-
-        else if (evt.type === "click") {
-            let commit = commits[index]
+            });
+        } else if (evt.type === "mouseleave") {
+            hoveredIndex = -1;  // Reseta o índice quando sai do hover
+        } else if (evt.type === "click") {
+            let commit = commits[index];
             if (!clickedCommits.includes(commit)) {
-                // Add the commit to the clickedCommits array
+                // Adiciona o commit ao array de commits clicados
                 clickedCommits = [...clickedCommits, commit];
-            }
-            else {
-                    // Remove the commit from the array
-                    clickedCommits = clickedCommits.filter(c => c !== commit);
+            } else {
+                // Remove o commit do array de commits clicados
+                clickedCommits = clickedCommits.filter(c => c !== commit);
             }
         }
     }
 
+    // Escala para o tamanho do círculo baseado no total de linhas alteradas
     $: rScale = d3.scaleSqrt()
-                .domain(d3.extent(commits.map(d=>d.totalLines)))
+                .domain(d3.extent(commits.map(d => d.totalLines)))
                 .range([2, 30]);
 
+    let clickedCommits = [];  // Array de commits clicados
 
-    let clickedCommits = [];
-
-    $: allTypes = Array.from(new Set(data.map(d => d.type)));
-    $: selectedLines = (clickedCommits.length > 0 ? clickedCommits : commits).flatMap(d => d.lines);
+    // Criação de um conjunto único de tipos de linha e contagem
+    $: allTypes = Array.from(new Set(data.map(d => d.type)));  // Tipos únicos de linha
+    $: selectedLines = (clickedCommits.length > 0 ? clickedCommits : commits).flatMap(d => d.lines);  // Linhas dos commits selecionados
     $: selectedCounts = d3.rollup(
         selectedLines,
-        v => v.length,
-        d => d.type
+        v => v.length,  // Contagem de linhas
+        d => d.type  // Agrupamento por tipo
     );
-    $: languageBreakdown = allTypes.map(type => [type, selectedCounts.get(type) || 0]);
+    $: languageBreakdown = allTypes.map(type => [type, selectedCounts.get(type) || 0]);  // Quebra por tipo de linguagem
 </script>
 
+<!-- Exibição de informações gerais da página -->
 <h2>META</h2>
-
-<p>Essa página contém informações sobre o código desse website.</p> 
+<p>Essa página contém informações sobre o código desse website.</p>
 <p>Total lines of code: {data.length}</p>
 
 <div class="container">
     <section>
         <h2>Summary</h2>
         <dl class="stats">
-        <dt>Total <abbr title="Lines of code">LOC</abbr></dt>
-        <dd>{data.length}</dd>
-        <dt>Files</dt>
-        <dd>{d3.groups(data, d => d.file).length}</dd>
-        <dt>Commits</dt>
-        <dd>{d3.groups(data, d => d.commit).length}</dd>
+            <dt>Total <abbr title="Lines of code">LOC</abbr></dt>
+            <dd>{data.length}</dd>
+            <dt>Files</dt>
+            <dd>{d3.groups(data, d => d.file).length}</dd>
+            <dt>Commits</dt>
+            <dd>{d3.groups(data, d => d.commit).length}</dd>
         </dl>
     </section>
 
+    <!-- Gráfico SVG -->
     <svg viewBox="0 0 {width} {height}">
-
         <g transform="translate(0, {usableArea.bottom})" bind:this={xAxis} />
         <g transform="translate({usableArea.left}, 0)" bind:this={yAxis} />
         <g class="gridlines" transform="translate({usableArea.left}, 0)" bind:this={yAxisGridlines} />
         <g class="dots">
-        {#each commits as commit, index }
-            <circle
-                class:selected={ clickedCommits.includes(commit) }
-                on:click={ evt => dotInteraction(index, evt) }
-                on:mouseenter={evt => dotInteraction(index, evt)}
-                on:mouseleave={evt => dotInteraction(index, evt)}
-                cx={ xScale(commit.datetime) }
-                cy={ yScale(commit.hourFrac) }
-                r={ rScale(commit.totalLines) }
-                fill="steelblue"
-                fill-opacity="0.5"
-            />
-        {/each}
+            {#each commits as commit, index }
+                <circle
+                    class:selected={ clickedCommits.includes(commit) }
+                    on:click={ evt => dotInteraction(index, evt) }
+                    on:mouseenter={evt => dotInteraction(index, evt)}
+                    on:mouseleave={evt => dotInteraction(index, evt)}
+                    cx={ xScale(commit.datetime) }
+                    cy={ yScale(commit.hourFrac) }
+                    r={ rScale(commit.totalLines) }
+                    fill="steelblue"
+                    fill-opacity="0.5"
+                />
+            {/each}
         </g>
     </svg>
 </div>
 
+<!-- Tooltip -->
 <dl class="info tooltip" hidden={hoveredIndex === -1} style="top: {tooltipPosition.y}px; left: {tooltipPosition.x}px" bind:this={commitTooltip}>
-    <dt id="tooltip">Commit</dt>
+    <dt id="tooltip">Commit:</dt>
     <dd id="tooltip"><a href="{ hoveredCommit.url }" target="_blank">{ hoveredCommit.id }</a></dd>
 
-    <dt id="tooltip">Date</dt>
+    <dt id="tooltip">Date:</dt>
     <dd id="tooltip">{ hoveredCommit.datetime?.toLocaleString("en", {dateStyle: "full"}) }</dd>
 
-    <dt id="tooltip">Author</dt>
+    <dt id="tooltip">Author:</dt>
     <dd id="tooltip">{ hoveredCommit.author }</dd>
 
-    <dt id="tooltip">Time</dt>
+    <dt id="tooltip">Time:</dt>
     <dd id="tooltip">{ hoveredCommit.time }</dd>
-
-
-    <!-- Add: Time, author, lines edited -->
 </dl>
 
 <style>
-    dl{
+    /* Estilos gerais e grid para exibição dos dados */
+    dl {
         display: grid;
         grid-template-columns: auto;
     }
-    dt{
-        grid-row: 1;
+    dt {
+        grid-column: 1;
         font-family: inherit;
         font-weight: bold;
         color: var(--border-gray);
         text-transform: uppercase;
     }
-    dd{
+    dd {
+        grid-column: 2;
         font-family: inherit;
         font-weight: bold;
     }
-    section{
-        border-width:0.15em;
-        border-style:solid;
-        border-color:var(--border-gray);
+    section {
+        border-width: 0.15em;
+        border-style: solid;
+        border-color: var(--border-gray);
         padding-left: 1em;
         padding-right: 1em;
     }
@@ -229,37 +245,29 @@
         stroke-opacity: .2;
     }
 
-    .info{
+    .info {
+        /* display: flex;
+        flex-direction: column; */
         display: grid;
-        margin:0;
         grid-template-columns: 2;
+        column-gap: 15px;
+        margin: 0px;
         background-color: oklch(100% 0% 0 / 80%);
         box-shadow: 1px 1px 3px 3px gray;
         border-radius: 5px;
         backdrop-filter: blur(10px);
-        padding:10px;
-
-        transition-duration: 500ms;
+        padding: 10px;
+        transition-duration: 250ms;
         transition-property: opacity, visibility;
-
         &[hidden]:not(:hover, :focus-within) {
             opacity: 0;
             visibility: hidden;
         }
     }
 
-    .info dt{
-        grid-column:1;
-        grid-row:auto;
-    }
-
-    .info dd{
-        grid-column:2;
-        grid-row:auto;
-        font-weight: 400;
-    }
-
-    .tooltip{
+    /* Estilos de tooltip */
+    .tooltip {
+        color: black;
         position: fixed;
         top: 1em;
         left: 1em;
@@ -270,15 +278,11 @@
         transform-origin: center;
         transform-box: fill-box;
         &:hover {
-            transform: scale(1.5); }
-    }
-    
-    #tooltip {
-        color: black;
+            transform: scale(1.5);
+        }
     }
 
     .selected {
         fill: var(--color-accent);
     }
-    </style>
-    
+</style>
