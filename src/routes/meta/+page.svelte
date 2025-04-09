@@ -3,6 +3,7 @@
     import * as d3 from "d3"; // D3.js para visualizações de dados
     import { onMount } from "svelte"; // Svelte onMount para execução após o carregamento do componente
     import { computePosition, autoPlacement, offset } from '@floating-ui/dom'; // Para posicionamento da tooltip
+    import Bar from '$lib/Bar.svelte';
 
     // Definindo dimensões do gráfico
     let width = 1000, height = 600;
@@ -197,6 +198,8 @@
         </g>
     </svg>
 </div>
+
+<Bar data={languageBreakdown} width={width} />
 
 <!-- Tooltip -->
 <dl class="info tooltip" hidden={hoveredIndex === -1} style="top: {tooltipPosition.y}px; left: {tooltipPosition.x}px" bind:this={commitTooltip}>
