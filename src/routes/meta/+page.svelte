@@ -73,6 +73,12 @@
     $: maxDatePlusOne = new Date(maxDate);
     $: maxDatePlusOne.setDate(maxDatePlusOne.getDate() + 1); // Aumenta 1 dia no máximo para incluir a data final
 
+    let commitProgress = 100;
+    $: timeScale = d3.scaleTime().domain([minDate,maxDate]).range([0,100]);
+    $: commitMaxTime = timeScale.invert(commitProgress);
+    $: filteredCommits = commits.filter(commit => commit.datetime <= commitMaxTime)
+    $: filteredLines = data.filter(d => d.datetime <= commitMaxTime)
+
     // Escala para o eixo X (tempo)
     $: xScale = d3.scaleTime()
                 .domain([minDate, maxDatePlusOne])
@@ -107,7 +113,7 @@
 
     // Variáveis de estado para o hover e tooltip
     let hoveredIndex = -1;  // Indica o índice do commit selecionado
-    $: hoveredCommit = commits[hoveredIndex] ?? hoveredCommit ?? {}; // Atualiza o commit com base no índice
+    $: hoveredCommit = filteredCommits[hoveredIndex] ?? hoveredCommit ?? {}; // Atualiza o commit com base no índice
 
     let cursor = { x: 0, y: 0 }; // Posições do cursor
     let commitTooltip; // Referência à tooltip
@@ -129,7 +135,7 @@
         } else if (evt.type === "mouseleave") {
             hoveredIndex = -1;  // Reseta o índice quando sai do hover
         } else if (evt.type === "click") {
-            let commit = commits[index];
+            let commit = filteredCommits[index];
             if (!clickedCommits.includes(commit)) {
                 // Adiciona o commit ao array de commits clicados
                 clickedCommits = [...clickedCommits, commit];
@@ -148,8 +154,8 @@
     let clickedCommits = [];  // Array de commits clicados
 
     // Criação de um conjunto único de tipos de linha e contagem
-    $: allTypes = Array.from(new Set(data.map(d => d.type)));  // Tipos únicos de linha
-    $: selectedLines = (clickedCommits.length > 0 ? clickedCommits : commits).flatMap(d => d.lines);  // Linhas dos commits selecionados
+    $: allTypes = Array.from(new Set(filteredLines.map(d => d.type)));  // Tipos únicos de linha
+    $: selectedLines = (clickedCommits.length > 0 ? clickedCommits : filteredCommits).flatMap(d => d.lines);  // Linhas dos commits selecionados
     $: selectedCounts = d3.rollup(
         selectedLines,
         v => v.length,  // Contagem de linhas
@@ -161,18 +167,25 @@
 <!-- Exibição de informações gerais da página -->
 <h2>META</h2>
 <p>Essa página contém informações sobre o código desse website.</p>
-<p>Total lines of code: {data.length}</p>
+<p>Total lines of code: {filteredLines.length}</p>
 
 <div class="container">
+    <div class="slider-container">
+        <div class="slider">
+            <label for="slider">Show commits until:</label>
+            <input type="range" id="slider" name="slider" min=0 max=100 bind:value={commitProgress}/>
+        </div>
+        <time class="time-label">{commitMaxTime.toLocaleString()}</time>
+    </div>
     <section>
         <h2>Summary</h2>
         <dl class="stats">
             <dt>Total <abbr title="Lines of code">LOC</abbr></dt>
-            <dd>{data.length}</dd>
+            <dd>{filteredLines.length}</dd>
             <dt>Files</dt>
-            <dd>{d3.groups(data, d => d.file).length}</dd>
+            <dd>{d3.groups(filteredLines, d => d.file).length}</dd>
             <dt>Commits</dt>
-            <dd>{d3.groups(data, d => d.commit).length}</dd>
+            <dd>{d3.groups(filteredLines, d => d.commit).length}</dd>
         </dl>
     </section>
 
@@ -182,7 +195,7 @@
         <g transform="translate({usableArea.left}, 0)" bind:this={yAxis} />
         <g class="gridlines" transform="translate({usableArea.left}, 0)" bind:this={yAxisGridlines} />
         <g class="dots">
-            {#each commits as commit, index }
+            {#each filteredCommits as commit, index }
                 <circle
                     class:selected={ clickedCommits.includes(commit) }
                     on:click={ evt => dotInteraction(index, evt) }
@@ -287,5 +300,19 @@
 
     .selected {
         fill: var(--color-accent);
+    }
+
+    .slider-container{
+	display:grid;
+    }
+    .slider{
+        display: flex;
+    }
+    #slider{
+        flex:1;
+    }
+    .time-label{
+        font-size: 0.75em;
+        text-align: right;
     }
 </style>
