@@ -1,47 +1,56 @@
 <script>
-    // Importações necessárias
-    import * as d3 from "d3"; // D3.js para visualizações de dados
-    import { onMount } from "svelte"; // Svelte onMount para execução após o carregamento do componente
-    import { computePosition, autoPlacement, offset } from '@floating-ui/dom'; // Para posicionamento da tooltip
-    import Bar from '$lib/Bar.svelte';
+    import * as d3 from "d3";
+    import StackedBar from '$lib/StackedBar.svelte';
+    import FileLines from '$lib/FileLines.svelte';
+    import Scrolly from "svelte-scrolly";
 
-    // Definindo dimensões do gráfico
-    let width = 1000, height = 600;
-    let data = [];  // Armazena os dados do CSV
-    let commits = [];  // Armazena os commits processados
+    const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // Função chamada ao montar o componente, responsável por carregar os dados CSV
+    import {
+        computePosition,
+        autoPlacement,
+        offset,
+    } from '@floating-ui/dom';
+
+    import { onMount, onDestroy } from "svelte";
+
+    let data = [];
+    let commits = [];
+    let width = 800, height = 600;
+    let margin = {top: 10, right: 20, bottom: 30, left: 40};
+
+    let usableArea = {
+        top: margin.top,
+        right: width - margin.right,
+        bottom: height - margin.bottom,
+        left: margin.left,
+        width: width - margin.left - margin.right,
+        height: height - margin.top - margin.bottom
+    };
+
     onMount(async () => {
-        try {
-            // Carregamento assíncrono do arquivo CSV
-            data = await d3.csv("./loc.csv", row => ({
-                ...row, // Mantém os dados existentes
-                line: Number(row.line), // Converte para número
-                depth: Number(row.depth),
-                length: Number(row.length),
-                date: new Date(row.date + "T00:00" + row.timezone), // Converte data
-                datetime: new Date(row.datetime)
-            }));
-        } catch (error) {
-            console.error("Error loading CSV:", error); // Exibe erro caso falhe o carregamento
-        }
-    });
-
-    // Processa os commits a partir dos dados carregados
-    $: {
-        // Agrupando os commits por ID
+        // Carrega dados
+        data = await d3.csv("./loc.csv", row => ({
+            ...row,
+            line: Number(row.line),
+            depth: Number(row.depth),
+            length: Number(row.length),
+            date: new Date(row.date + "T00:00" + row.timezone),
+            datetime: new Date(row.datetime)
+        }));
+        
+        // Processa commits
         commits = d3.groups(data, d => d.commit).map(([commit, lines]) => {
-            let first = lines[0];  // Pega o primeiro commit
-            let { author, date, time, timezone, datetime } = first;
+            let first = lines[0];
+            let {author, date, time, timezone, datetime} = first;
             let ret = {
                 id: commit,
-                url: "https://github.com/gusyper/lab4_dataVis/commit/" + commit,
+                url: "https://github.com/Gustyper/Portifolio_dataVis/commit/" + commit,
                 author, date, time, timezone, datetime,
-                hourFrac: datetime.getHours() + datetime.getMinutes() / 60,  // Fracção de hora
-                totalLines: lines.length  // Total de linhas alteradas nesse commit
+                hourFrac: datetime.getHours() + datetime.getMinutes() / 60,
+                totalLines: lines.length
             };
-
-            // Definindo propriedade não enumerável "lines" para cada commit
+            
             Object.defineProperty(ret, "lines", {
                 value: lines,
                 configurable: true,
@@ -52,238 +61,274 @@
             return ret;
         });
 
-        // Ordena os commits pelo número de linhas alteradas (decrescente)
         commits = d3.sort(commits, d => -d.totalLines);
-    }
 
-    // Definindo margens e áreas utilizáveis para o gráfico
-    let margin = { top: 10, right: 10, bottom: 30, left: 20 };
-    let usableArea = {
-        top: margin.top,
-        right: width - margin.right,
-        bottom: height - margin.bottom,
-        left: margin.left
-    };
-    usableArea.width = usableArea.right - usableArea.left;
-    usableArea.height = usableArea.bottom - usableArea.top;
+        // Configura redimensionamento responsivo
+        const handleResize = () => {
+            width = Math.min(window.innerWidth * 0.9, 1200);
+            height = width * 0.6;
+            
+            usableArea = {
+                top: margin.top,
+                right: width - margin.right,
+                bottom: height - margin.bottom,
+                left: margin.left,
+                width: width - margin.left - margin.right,
+                height: height - margin.top - margin.bottom
+            };
+        };
 
-    // Definindo escalas para o eixo X e Y
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        document.body.classList.add('meta-page');
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            document.body.classList.remove('meta-page');
+        };
+    });
+
+    // Computed properties
     $: minDate = d3.min(commits.map(d => d.date));
     $: maxDate = d3.max(commits.map(d => d.date));
     $: maxDatePlusOne = new Date(maxDate);
-    $: maxDatePlusOne.setDate(maxDatePlusOne.getDate() + 1); // Aumenta 1 dia no máximo para incluir a data final
+    $: maxDatePlusOne.setDate(maxDatePlusOne.getDate() + 1);
 
     let commitProgress = 100;
     $: timeScale = d3.scaleTime().domain([minDate,maxDate]).range([0,100]);
     $: commitMaxTime = timeScale.invert(commitProgress);
-    $: filteredCommits = commits.filter(commit => commit.datetime <= commitMaxTime)
-    $: filteredLines = data.filter(d => d.datetime <= commitMaxTime)
 
-    // Escala para o eixo X (tempo)
+    $: filteredCommits = commits
+        .filter(commit => commit.datetime <= commitMaxTime)
+        .sort((a, b) => a.datetime - b.datetime);
+
+    $: filteredMinDate = d3.min(filteredCommits.map(d => d.date));
+    $: filteredMaxDate = d3.max(filteredCommits.map(d => d.date));
+    $: filteredMaxDatePlusOne = new Date(filteredMaxDate);
+    $: filteredMaxDatePlusOne.setDate(filteredMaxDatePlusOne.getDate() + 1);
+
     $: xScale = d3.scaleTime()
-                .domain([minDate, maxDatePlusOne])
+                .domain([filteredMinDate, filteredMaxDatePlusOne])
                 .range([usableArea.left, usableArea.right])
                 .nice();
 
-    // Escala para o eixo Y (horas)
     $: yScale = d3.scaleLinear()
                 .domain([24, 0])
-                .range([usableArea.bottom, usableArea.top]);
+                .range([usableArea.top, usableArea.bottom]);
 
-    // Bindings de eixos (X e Y) para os elementos SVG
     let xAxis, yAxis;
-
+    let yAxisGridlines;
+    
     $: {
-        // Atualiza os eixos com a escala definida
         d3.select(xAxis).call(d3.axisBottom(xScale));
         d3.select(yAxis).call(d3.axisLeft(yScale).tickFormat(d => String(d % 24).padStart(2, "0") + ":00"));
-    }
-
-    // Gridlines no eixo Y
-    let yAxisGridlines;
-
-    $: {
-        // Configura a grade para o eixo Y
         d3.select(yAxisGridlines).call(
             d3.axisLeft(yScale)
-            .tickFormat("") // Remove rótulos
-            .tickSize(-usableArea.width) // Desenha as linhas de grade no eixo X
+              .tickFormat("")
+              .tickSize(-usableArea.width)
         );
     }
 
-    // Variáveis de estado para o hover e tooltip
-    let hoveredIndex = -1;  // Indica o índice do commit selecionado
-    $: hoveredCommit = filteredCommits[hoveredIndex] ?? hoveredCommit ?? {}; // Atualiza o commit com base no índice
+    let hoveredIndex = -1;
+    $: hoveredCommit = filteredCommits[hoveredIndex] ?? hoveredCommit ?? {};
 
-    let cursor = { x: 0, y: 0 }; // Posições do cursor
-    let commitTooltip; // Referência à tooltip
-    let tooltipPosition = { x: 0, y: 0 }; // Posições da tooltip
+    let commitTooltip;
+    let tooltipPosition = {x: 0, y: 0};
+    let clickedCommits = [];
 
-    // Função para interações de hover e click nos commits (dots)
     async function dotInteraction(index, evt) {
         let hoveredDot = evt.target;
         if (evt.type === "mouseenter") {
-            hoveredIndex = index;  // Atualiza o índice do commit
-            cursor = { x: evt.x, y: evt.y };  // Atualiza posição do cursor
+            hoveredIndex = index;
             tooltipPosition = await computePosition(hoveredDot, commitTooltip, {
-                strategy: "fixed",  // Posição fixa da tooltip
+                strategy: "fixed",
                 middleware: [
-                    offset(5),  // Distância da tooltip em relação ao dot
-                    autoPlacement() // Ajuste automático da posição da tooltip
+                    offset(10),
+                    autoPlacement({
+                        padding: 10,
+                        boundary: document.querySelector('.container')
+                    })
                 ],
             });
-        } else if (evt.type === "mouseleave") {
-            hoveredIndex = -1;  // Reseta o índice quando sai do hover
-        } else if (evt.type === "click") {
-            let commit = filteredCommits[index];
+        }
+        else if (evt.type === "mouseleave") {
+            hoveredIndex = -1
+        }
+        else if (evt.type === "click") {
+            let commit = filteredCommits[index]
             if (!clickedCommits.includes(commit)) {
-                // Adiciona o commit ao array de commits clicados
                 clickedCommits = [...clickedCommits, commit];
-            } else {
-                // Remove o commit do array de commits clicados
+            }
+            else {
                 clickedCommits = clickedCommits.filter(c => c !== commit);
             }
         }
     }
 
-    // Escala para o tamanho do círculo baseado no total de linhas alteradas
     $: rScale = d3.scaleSqrt()
-                .domain(d3.extent(commits.map(d => d.totalLines)))
+                .domain(d3.extent(commits.map(d=>d.totalLines)))
                 .range([2, 30]);
+    
+    $: filteredLines = data.filter(d => d.datetime <= commitMaxTime)
+    
+    $: allTypes = Array.from(new Set(filteredLines.map(d => d.type)));
+    $: selectedLines = (filteredCommits.length > 0 ? filteredCommits : commits).flatMap(d => d.lines);
 
-    let clickedCommits = [];  // Array de commits clicados
-
-    // Criação de um conjunto único de tipos de linha e contagem
-    $: allTypes = Array.from(new Set(filteredLines.map(d => d.type)));  // Tipos únicos de linha
-    $: selectedLines = (clickedCommits.length > 0 ? clickedCommits : filteredCommits).flatMap(d => d.lines);  // Linhas dos commits selecionados
     $: selectedCounts = d3.rollup(
         selectedLines,
-        v => v.length,  // Contagem de linhas
-        d => d.type  // Agrupamento por tipo
+        v => v.length,
+        d => d.type
     );
-    $: languageBreakdown = allTypes.map(type => [type, selectedCounts.get(type) || 0]);  // Quebra por tipo de linguagem
+
+    $: languageBreakdown = allTypes.map(type => [type, selectedCounts.get(type) || 0]);
+    $: dataObject = Object.fromEntries(languageBreakdown);
+    $: keys = Object.keys(dataObject);
+    $: dataForStack = [dataObject];
+    $: stackedData = d3.stack().keys(keys)(dataForStack);
+    $: total = d3.max(stackedData, series => d3.max(series, d => d[1])) || 1;
+
+    $: xScaleStack = d3.scaleLinear()
+                    .domain([0, total])
+                    .range([0, usableArea.width]);
+
+    $: numCommits = filteredCommits.length || 1;
+    $: step = 100 / numCommits;
+    $: currentCommitIndex = Math.min(Math.floor(commitProgress / step), numCommits - 1);
 </script>
 
-<!-- Exibição de informações gerais da página -->
-<h2>META</h2>
-<p>Essa página contém informações sobre o código desse website.</p>
-<p>Total lines of code: {filteredLines.length}</p>
+<svelte:head>
+  <title>Meta</title>
+</svelte:head>
 
 <div class="container">
-    <div class="slider-container">
-        <div class="slider">
-            <label for="slider">Show commits until:</label>
-            <input type="range" id="slider" name="slider" min=0 max=100 bind:value={commitProgress}/>
-        </div>
-        <time class="time-label">{commitMaxTime.toLocaleString()}</time>
-    </div>
-    <section>
-        <h2>Summary</h2>
-        <dl class="stats">
-            <dt>Total <abbr title="Lines of code">LOC</abbr></dt>
-            <dd>{filteredLines.length}</dd>
-            <dt>Files</dt>
-            <dd>{d3.groups(filteredLines, d => d.file).length}</dd>
-            <dt>Commits</dt>
-            <dd>{d3.groups(filteredLines, d => d.commit).length}</dd>
-        </dl>
-    </section>
+    <h1>Meta</h1>
+    <p>Total lines of code: {data.length}</p>
 
-    <!-- Gráfico SVG -->
-    <svg viewBox="0 0 {width} {height}">
-        <g transform="translate(0, {usableArea.bottom})" bind:this={xAxis} />
-        <g transform="translate({usableArea.left}, 0)" bind:this={yAxis} />
-        <g class="gridlines" transform="translate({usableArea.left}, 0)" bind:this={yAxisGridlines} />
-        <g class="dots">
-            {#each filteredCommits as commit, index }
+    <Scrolly bind:progress={commitProgress} style="width: 90%; max-width: 800px; margin: auto;">
+        {#if filteredCommits.length === 0}
+          <p>Loading commits...</p>
+        {:else}
+          {#each filteredCommits as commit, index (commit.id)}
+            <p class="narrative" style="opacity: {commitProgress >= index * step ? 1 : 0.2}; transition: opacity 0.3s;">
+              On <strong>{commit.datetime.toLocaleString("en", { dateStyle: "full", timeStyle: "short" })}</strong>,  
+              {index === 0
+                ? `I made the first commit, starting the project. You can see it <a href="${commit.url}" target="_blank">here</a>.`
+                : `I added another commit. Check it in this link: <a href="${commit.url}" target="_blank">here</a>. It was a very important commit to me and definitely helped me become a better programming genius, as I currently am. I praise the existence of this commit and all its reasoning, he is full of love.`}
+              This commit changed <strong>{commit.totalLines}</strong> lines in <strong>{d3.groups(commit.lines, d => d.file).length}</strong> files.
+            </p>
+          {/each}
+        {/if}
+    
+        <svelte:fragment slot="viz">
+          <!-- Scatterplot com commits -->
+          <svg width="100%" viewBox={`0 0 ${width} ${height}`} style="display: block; margin: 20px auto; max-width: 100%;">
+            <g transform="translate(0, {usableArea.bottom})" bind:this={xAxis} />
+            <g transform="translate({usableArea.left}, 0)" bind:this={yAxis} />
+            <g class="gridlines" transform="translate({usableArea.left}, 0)" bind:this={yAxisGridlines} />
+            <g class="dots">
+              {#each filteredCommits as commit, index}
                 <circle
-                    class:selected={ clickedCommits.includes(commit) }
-                    on:click={ evt => dotInteraction(index, evt) }
-                    on:mouseenter={evt => dotInteraction(index, evt)}
-                    on:mouseleave={evt => dotInteraction(index, evt)}
-                    cx={ xScale(commit.datetime) }
-                    cy={ yScale(commit.hourFrac) }
-                    r={ rScale(commit.totalLines) }
-                    fill="steelblue"
-                    fill-opacity="0.5"
+                  on:mouseenter={evt => dotInteraction(index, evt)}
+                  on:mouseleave={evt => dotInteraction(index, evt)}
+                  on:click={evt => dotInteraction(index, evt)}
+                  class:selected={clickedCommits.includes(commit)}
+                  cx={xScale(commit.datetime)}
+                  cy={yScale(commit.hourFrac)}
+                  r={rScale(commit.totalLines)}
+                  fill="steelblue"
+                  fill-opacity="0.5"
+                  style="cursor: pointer;"
                 />
-            {/each}
-        </g>
-    </svg>
+              {/each}
+            </g>
+          </svg>
+      
+          <!-- Stacked Bar mostrando tipos -->
+          <StackedBar
+            {stackedData}
+            {keys}
+            {width}
+            barHeight={40}
+            xScale={xScaleStack}
+            colorScale={colorScale}
+          />
+        </svelte:fragment>
+    </Scrolly>
+
+    <FileLines lines={filteredLines} width={usableArea.width} colorScale={colorScale} />
 </div>
 
-<Bar data={languageBreakdown} width={width} />
-
-<!-- Tooltip -->
-<dl class="info tooltip" hidden={hoveredIndex === -1} style="top: {tooltipPosition.y}px; left: {tooltipPosition.x}px" bind:this={commitTooltip}>
-    <dt id="tooltip">Commit:</dt>
-    <dd id="tooltip"><a href="{ hoveredCommit.url }" target="_blank">{ hoveredCommit.id }</a></dd>
-
-    <dt id="tooltip">Date:</dt>
-    <dd id="tooltip">{ hoveredCommit.datetime?.toLocaleString("en", {dateStyle: "full"}) }</dd>
-
-    <dt id="tooltip">Author:</dt>
-    <dd id="tooltip">{ hoveredCommit.author }</dd>
-
-    <dt id="tooltip">Time:</dt>
-    <dd id="tooltip">{ hoveredCommit.time }</dd>
-</dl>
-
 <style>
-    /* Estilos gerais e grid para exibição dos dados */
-    dl {
-        display: grid;
-        grid-template-columns: auto;
+    .container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        box-sizing: border-box;
     }
-    dt {
-        grid-column: 1;
-        font-family: inherit;
-        font-weight: bold;
-        color: var(--border-gray);
-        text-transform: uppercase;
+
+    .narrative {
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
     }
-    dd {
-        grid-column: 2;
-        font-family: inherit;
-        font-weight: bold;
+    
+    .narrative a {
+        color: #007acc;
+        text-decoration: none;
     }
-    section {
-        border-width: 0.15em;
-        border-style: solid;
-        border-color: var(--border-gray);
-        padding-left: 1em;
-        padding-right: 1em;
+    
+    .narrative a:hover {
+        text-decoration: underline;
     }
+    
+    .selected {
+        stroke: black;
+        stroke-width: 2px;
+    }
+    
     svg {
+        width: 100%;
+        height: auto;
+        max-width: 100%;
         overflow: visible;
     }
+
     .gridlines {
         stroke-opacity: .2;
     }
 
     .info {
-        /* display: flex;
-        flex-direction: column; */
         display: grid;
+        margin: 0;
         grid-template-columns: 2;
-        column-gap: 15px;
-        margin: 0px;
         background-color: oklch(100% 0% 0 / 80%);
         box-shadow: 1px 1px 3px 3px gray;
         border-radius: 5px;
         backdrop-filter: blur(10px);
         padding: 10px;
-        transition-duration: 250ms;
+        transition-duration: 500ms;
         transition-property: opacity, visibility;
-        &[hidden]:not(:hover, :focus-within) {
-            opacity: 0;
-            visibility: hidden;
-        }
     }
 
-    /* Estilos de tooltip */
+    .info[hidden]:not(:hover, :focus-within) {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .info dt {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .info dd {
+        grid-column: 2;
+        grid-row: auto;
+        font-weight: 400;
+    }
+
     .tooltip {
-        color: black;
         position: fixed;
         top: 1em;
         left: 1em;
@@ -293,26 +338,35 @@
         transition: 200ms;
         transform-origin: center;
         transform-box: fill-box;
-        &:hover {
-            transform: scale(1.5);
+    }
+    
+    circle:hover {
+        transform: scale(1.5);
+    }
+    
+    @starting-style {
+        r: 0;
+    }
+
+    :global(body.meta-page) {
+        width: 90%;
+        max-width: none;
+        margin-inline: auto;
+        padding: 1cm;
+    }
+
+    @media (max-width: 768px) {
+        :global(body.meta-page) {
+            width: 95%;
+            padding: 0.5cm;
         }
-    }
-
-    .selected {
-        fill: var(--color-accent);
-    }
-
-    .slider-container{
-	display:grid;
-    }
-    .slider{
-        display: flex;
-    }
-    #slider{
-        flex:1;
-    }
-    .time-label{
-        font-size: 0.75em;
-        text-align: right;
+        
+        .narrative {
+            font-size: 0.9rem;
+        }
+        
+        .container {
+            padding: 0 10px;
+        }
     }
 </style>
